@@ -63,7 +63,7 @@
         WHILE frame
         SUM (length frame)))
 
-(defun make-channel (interface-name protocol &aux (buffer-size 2048))
+(defun make-channel (interface-name &key (protocol :all) &aux (buffer-size 2048))
   (assert (find-protocol-by-name protocol) () 
           "protocol ~s is undefined. (LIST-ALL-PROTOCOLS function provides avaiable protocol list)" protocol)
   (let* ((fd (make-packet-fd interface-name (find-protocol-by-name protocol)))
@@ -85,7 +85,7 @@
     (values (sb-unix:unix-close fd))))
 
 (defmacro with-channel ((var interface-name &key (protocol :all) promisc) &body body)
-  `(let ((,var (make-channel ,interface-name ,protocol)))
+  `(let ((,var (make-channel ,interface-name :protocol ,protocol)))
      (when ,promisc
        (set-promisc-mode ,interface-name t))
      (unwind-protect
@@ -108,33 +108,31 @@
   (with-slots (fd buffer buffer-size) channel
     (let ((ret (recv fd buffer buffer-size (if dont-wait +MSG_DONTWAIT+ 0))))
       (case ret
-        (-1 (if (eq (get-errno) +EAGAIN+)
-                (values nil t nil nil nil)
-              (values nil nil nil nil nil)))
-        (0 (values nil t nil nil nil))
+        (-1 (alien-assert (eq (get-errno) +EAGAIN+) :read-frame)
+            (values nil nil nil nil)))
+        (0 (values nil nil nil nil))
         (t (let ((frame (make-array ret :element-type '(unsigned-byte 8))))
              (dotimes (i ret)
                (setf (aref frame i) (deref buffer i)))
              (multiple-value-bind (to from type)
                                   (parse-ethernet-header frame)
-               (values frame t from to type))))))))
+               (values frame from to type))))))))
 
-(defun write-frame (bytes channel)
+(defun write-frame (octets channel)
   (with-slots (fd buffer buffer-size) channel
-    (assert (< (length bytes) buffer-size))
-    (dotimes (i (length bytes))
-      (setf (deref buffer i) (aref bytes i)))
-    (let ((ret (send fd buffer (length bytes) 0)))
-      (case ret
-        (-1 nil)
-        (t  ret)))))
+    (assert (< (length octets) buffer-size))
+    (dotimes (i (length octets))
+      (setf (deref buffer i) (aref octets i)))
+    (let ((len (send fd buffer (length octets) 0)))
+      (alien-assert (/= -1 len) :write-frame)
+      len)))
 
 (defun sniffing (interface-name &key (protocol :all) promisc)
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
-     (multiple-value-bind (octets ok source destination protocol) 
+     (multiple-value-bind (octets source destination protocol) 
                           (read-frame cnl)
-       (when ok
+       (when octets
          (format t "~&;# ~A -> ~A [~A]~%" source destination protocol)
          (loop WITH column-num = 16
                FOR row FROM 0 

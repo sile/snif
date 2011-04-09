@@ -1,6 +1,6 @@
 ============
 === 概要 ===
-・パケットキャプチャの実装
+・パケットスニファリングの実装
 ・SBCLおよびLinux環境に依存
 
 
@@ -11,9 +11,66 @@
 
 ===========
 === API ===
+# (snif:make-channel interface-name &key (protocol :all)) => channel
+　特定にインターフェースに対するイーサネット用入出力チャネルを作成する
+　- interface-name: 対象のインターフェースの名前
+　- protocol: 入出力対象となるのプロトコル
+
+# (snif:list-all-protocols) => (list (protocol description) ...)
+　利用可能なプロトコル一覧を返す
+
+# (snif:close channel) => t
+　チャネルを閉じる
+
+# (snif:promisc-mode interface-name) => (or t nil)
+　指定されたインターフェースがプロミスキャスモードになっているかどうかを判断する
+
+# (snif:set-promisc-mode interface-name enable) => t
+　指定されたインターフェースのプロミスキャスモードを設定する
+　- interface-name: 対象インターフェース
+　- enable: tならプロミスキャスモードをオンに、nilならオフに設定する
+
+# (snif:with-channel ((channel-var interface-name &key (protocol :all) promisc) &body body) 
+　引数に従ってチャネルを作成し、本体を実行する
+　本体を抜ける際には、必ずチェネルが閉じられる
+　- channel-var: 作成されたチャネルが束縛される変数
+　- interface-name: チャネルの入出力の対象となるインターフェースの名前
+　- protocol: 入出力対象となるプロトコル
+　- promisc: tならインターフェースのプロミスキャスモードをオンに、nilならオフに設定して、本体を実行する
+
+# (snif:sniffing interface-name &key (protocol :all) promisc)
+　指定されたインターフェースに対してスニファリングを行う
+　スニファリング結果(経過)は標準出力に出力される
+
+# (snif:read-frame channel &key dont-wait) => (values octets source destination protocol)
+　チャネルからイーサネットフレームを読み込む
+　- dont-wait: この値がtの場合、読み込み処理はブロッキングされない
+　　　　　　　 即座に読み込み可能なデータない場合は、返り値として(values nil nil nil nil)が返される
+　- octets: 読み込んだイーサネットフレーム。ヘッダを含む。(simple-array (unsigned-byte 8))型
+　- source: 送信元のハードウェアアドレス。文字列形式。
+　- destination: 送信先のハードウェアアドレス。文字列形式。
+　- protocol: 使用されたプロトコル
+
+# (snif:listen channel) => (or t nil)
+　チャネルからブロッキングせずにデータが読み込み可能かどうかを判定する
+
+# (snif:flush channel) => discarded-octets-size
+　チャネルに溜まっている全てのデータを読み捨てる
+　- discarded-octets-size: 読み捨てたデータのバイト数
+
+# (snif:write-frame octets channel) => write-octets-size
+　チャネルにデータを出力する
+　- octets: 出力するバイト列
+　- channel: 対象チャネル
+　- write-octets-size: 実際に出力されたバイト数
 
 
 ============
 === 参照 ===
 ・http://www.fenix.ne.jp/~thomas/memo/linux_raw_packet/
 ・http://linuxjm.sourceforge.jp/html/LDP_man-pages/man7/packet.7.html
+
+
+============
+=== TODO ===
+・ソースコード整理
