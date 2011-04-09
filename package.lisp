@@ -1,6 +1,6 @@
 (defpackage snif
   (:use :common-lisp :sb-alien)
-  (:shadow :common-lisp listen close)
+  (:shadow :common-lisp listen close flush)
   (:export capture
            
            make-packet-fd
@@ -11,7 +11,8 @@
            write-packet
            
            channel
-           make-channel
+           make
+           flush
            listen
            close
            read-frame

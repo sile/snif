@@ -55,20 +55,22 @@
       (named.when (if-idx (interface-index fd name))
         (bind-to-interface fd if-idx protocol)))))
 
-(defun make-buffer (size) (make-alien (unsigned 8) size))
-
 (defstruct (channel (:constructor 
-                     new-channel 
+                     make-channel 
                      (fd buffer-size &aux (buffer (make-buffer buffer-size)))))
   (fd     0 :type fixnum)
   (buffer 0 :type (alien (* (unsigned 8))))
   (buffer-size 0 :type fixnum))
 
-(defun make-channel (interface-name protocol &key (buffer-size 2048))
+(defun flush (channel)
+  (loop FOR frame = (read-frame channel :dont-wait t)
+        WHILE frame
+        SUM (length frame)))
+
+(defun make (interface-name protocol &key (buffer-size 2048))
   (named.when (fd (make-packet-fd interface-name protocol))
-    (named.when (cnl (new-channel fd buffer-size))
-      ;; discard ...
-      (loop WHILE (plusp (length (read-frame cnl :dont-wait t))))
+    (named.when (cnl (make-channel fd buffer-size))
+      (flush cnl)
       cnl)))
 
 (defparameter *listen-buf* (make-alien (array (unsigned 8) 1)))
@@ -109,6 +111,7 @@
              (multiple-value-bind (to from type)
                                   (parse-ethernet-header frame)
                (values frame t from to type))))))))
+
 
 (defun write-frame (bytes channel)
   (with-slots (fd buffer buffer-size) channel

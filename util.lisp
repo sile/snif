@@ -45,4 +45,4 @@
      (when ,var
        ,@body)))
 
-
+(defun make-buffer (size) (make-alien (unsigned 8) size))
