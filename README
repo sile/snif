@@ -42,6 +42,7 @@
 　指定されたインターフェースに対してスニファリングを行う
 　スニファリング結果(経過)は標準出力に出力される
 
+
 # (snif:read-frame channel &key dont-wait) => (values octets source destination protocol)
 　チャネルからイーサネットフレームを読み込む
 　- dont-wait: この値がtの場合、読み込み処理はブロッキングされない
@@ -75,3 +76,4 @@
 ============
 === TODO ===
 ・ソースコード整理
+・SOCK_DGRAMに対応
