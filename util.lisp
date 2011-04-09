@@ -35,9 +35,8 @@
      (mem-zero-set ,var ,(mksym type ".SIZE"))
      ,@body))
 
-(defmacro named.when ((var exp) &body body)
-  `(let ((,var ,exp))
-     (when ,var
-       ,@body)))
-
 (defun make-buffer (size) (make-alien (unsigned 8) size))
+
+(defmacro alien-assert (test-form &rest tags)
+  `(unless ,test-form
+     (error "~{~A~^ ~}: ~A(~A)" (list ,@tags) ,(sb-int:strerror (get-errno)) ,(get-errno))))

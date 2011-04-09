@@ -2,39 +2,37 @@
 
 (defun %make-packet-fd (protocol)
   (let ((fd (socket +PF_PACKET+ +SOCK_RAW+ (to-network-order protocol 2))))
-    (when (/= fd -1)
-      fd)))
+    (alien-assert (/= fd -1) :make-packet-fd)
+    fd))
 
 (defmacro with-ifreq ((var interface-name) &body body)
   `(with-zeroset-alien (,var ifreq)
      (strncpy (ifreq.name ,var) ,interface-name +IFNAMSIZ+)
      ,@body))
 
-(defun interface-index (fd interface-name)
+(defun interface-index (fd interface-name &aux (name interface-name))
   (declare #.*muffle-compiler-note*)
-  (with-ifreq (ifr interface-name)
-    (when (sb-unix:unix-ioctl fd +SIOCGIFINDEX+ (alien-sap ifr))
-      (ifreq.index ifr))))
+  (with-ifreq (ifr name)
+    (alien-assert (sb-unix:unix-ioctl fd +SIOCGIFINDEX+ (alien-sap ifr)) :get-interface-index name)
+    (ifreq.index ifr)))
 
-(defun promisc-mode (interface-name)
+(defun promisc-mode (interface-name &aux (name interface-name))
   (declare #.*muffle-compiler-note*)
-  (named.when (fd (%make-packet-fd ETH_P_ALL))
-    (with-ifreq (ifr interface-name)
-      (when (sb-unix:unix-ioctl fd +SIOCGIFFLAGS+ (alien-sap ifr))
-        (return-from promisc-mode 
-                     (values (logtest +IFF_PROMISC+ (ifreq.flags ifr)) t)))))
-  (values nil nil))
+  (let ((fd (%make-packet-fd ETH_P_ALL)))
+    (with-ifreq (ifr name)
+      (alien-assert (sb-unix:unix-ioctl fd +SIOCGIFFLAGS+ (alien-sap ifr)) :get-interface-flags name)
+      (logtest +IFF_PROMISC+ (ifreq.flags ifr)))))
 
-(defun set-promisc-mode (interface-name enable)
+(defun set-promisc-mode (interface-name enable &aux (name interface-name))
   (declare #.*muffle-compiler-note*)
-  (named.when (fd (%make-packet-fd ETH_P_ALL))
-    (with-ifreq (ifr interface-name)
-      (values
-       (and (sb-unix:unix-ioctl fd +SIOCGIFFLAGS+ (alien-sap ifr))
-            (setf (ifreq.flags ifr)
-                  (boole (if enable boole-ior boole-andc1) 
-                         +IFF_PROMISC+ (ifreq.flags ifr)))
-            (sb-unix:unix-ioctl fd +SIOCSIFFLAGS+ (alien-sap ifr)))))))
+  (let ((fd (%make-packet-fd ETH_P_ALL)))
+    (with-ifreq (ifr name)
+      (alien-assert (sb-unix:unix-ioctl fd +SIOCGIFFLAGS+ (alien-sap ifr)) :get-interface-flags name)
+      (setf (ifreq.flags ifr)
+            (boole (if enable boole-ior boole-andc1) 
+                   +IFF_PROMISC+ (ifreq.flags ifr)))
+      (alien-assert (sb-unix:unix-ioctl fd +SIOCSIFFLAGS+ (alien-sap ifr)) :set-interface-flags name)))
+  t)
 
 (defun bind-to-interface (fd interface-index protocol)
   (declare #.*muffle-compiler-note*)
@@ -42,16 +40,16 @@
     (setf (slot sll 'family) +PF_PACKET+
           (slot sll 'protocol) (to-network-order protocol 2)
           (slot sll 'ifindex) interface-index)
-    (when (= 0 (bind fd (cast sll (* sockaddr)) sockaddr-ll.size))
-      fd)))
+    (alien-assert (= 0 (bind fd (cast sll (* sockaddr)) sockaddr-ll.size)) :bind)
+    fd))
 
 (defun make-packet-fd (interface-name protocol)
   (let ((name (if (stringp interface-name) 
                   interface-name
                 (string-downcase (string interface-name)))))
-    (named.when (fd (%make-packet-fd protocol))
-      (named.when (if-idx (interface-index fd name))
-        (bind-to-interface fd if-idx protocol)))))
+    (let* ((fd (%make-packet-fd protocol))
+           (if-idx (interface-index fd name)))
+      (bind-to-interface fd if-idx protocol))))
 
 (defstruct (channel (:constructor 
                      new-channel 
@@ -66,10 +64,12 @@
         SUM (length frame)))
 
 (defun make-channel (interface-name protocol &aux (buffer-size 2048))
-  (named.when (fd (make-packet-fd interface-name (find-protocol-by-name protocol)))
-    (named.when (cnl (new-channel fd buffer-size))
-      (flush cnl)
-      cnl)))
+  (assert (find-protocol-by-name protocol) () 
+          "protocol ~s is undefined. (LIST-ALL-PROTOCOLS function provides avaiable protocol list)" protocol)
+  (let* ((fd (make-packet-fd interface-name (find-protocol-by-name protocol)))
+         (cnl (new-channel fd buffer-size)))
+    (flush cnl)
+    cnl))
 
 (defparameter *listen-buf* (make-alien (array (unsigned 8) 1)))
 (defun listen (channel)
