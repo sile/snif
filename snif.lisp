@@ -119,7 +119,6 @@
                                   (parse-ethernet-header frame)
                (values frame t from to type))))))))
 
-
 (defun write-frame (bytes channel)
   (with-slots (fd buffer buffer-size) channel
     (assert (< (length bytes) buffer-size))
@@ -130,11 +129,32 @@
         (-1 nil)
         (t  ret)))))
 
-(defun sniffering (interface-name &key (protocol :all) promisc)
+(defun sniffing (interface-name &key (protocol :all) promisc)
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
      (multiple-value-bind (octets ok source destination protocol) 
                           (read-frame cnl)
        (when ok
-         (format t "~&; ~A -> ~A [~A]~%" source destination protocol)
-         )))))
+         (format t "~&;# ~A -> ~A [~A]~%" source destination protocol)
+         (loop WITH column-num = 16
+               FOR row FROM 0 
+               WHILE (< (* row column-num) (length octets))
+           DO
+           (format t ";[~(~3,'0x~)]" (* row column-num))
+           (loop FOR column FROM 0 BELOW column-num
+                 FOR i = (+ (* row column-num) column)
+                 WHILE (< i (length octets))
+                 DO 
+                 (format t " ~(~2,'0x~)" (aref octets i)))
+           (format t "~54t")
+           (loop FOR column FROM 0 BELOW column-num
+                 FOR i = (+ (* row column-num) column)
+                 WHILE (< i (length octets))
+                 FOR c = (code-char (aref octets i))
+                 DO 
+                 (format t "~c" (if (and (standard-char-p c)
+                                         (graphic-char-p c))
+                                    c
+                                  #\.)))
+           (terpri))
+         (format t ";~%"))))))

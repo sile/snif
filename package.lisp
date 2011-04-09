@@ -12,7 +12,7 @@
            promisc-mode
            set-promisc-mode
            list-all-protocols
-           sniffering))
+           sniffing))
 (in-package :snif)
 
 (defvar *muffle-compiler-note* '(sb-ext:muffle-conditions sb-ext:compiler-note))
