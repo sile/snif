@@ -127,14 +127,14 @@
       (alien-assert (/= -1 len) :write-frame)
       len)))
 
-(defun sniffing (interface-name &key (protocol :all) promisc)
+(defun sniffing (interface-name &key (protocol :all) promisc (columns 16))
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
      (multiple-value-bind (octets source destination protocol) 
                           (read-frame cnl)
        (when octets
          (format t "~&;# ~A -> ~A [~A]~%" source destination protocol)
-         (loop WITH column-num = 16
+         (loop WITH column-num = columns
                FOR row FROM 0 
                WHILE (< (* row column-num) (length octets))
            DO
@@ -144,7 +144,7 @@
                  WHILE (< i (length octets))
                  DO 
                  (format t " ~(~2,'0x~)" (aref octets i)))
-           (format t "~55t")
+           (format t "~vt" (+ 7 (* column-num 3)))
            (loop FOR column FROM 0 BELOW column-num
                  FOR i = (+ (* row column-num) column)
                  WHILE (< i (length octets))

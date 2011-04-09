@@ -38,7 +38,7 @@
 　- protocol: 入出力対象となるプロトコル
 　- promisc: tならインターフェースのプロミスキャスモードをオンに、nilならオフに設定して、本体を実行する
 
-# (snif:sniffing interface-name &key (protocol :all) promisc)
+# (snif:sniffing interface-name &key (protocol :all) promisc (columns 16))
 　指定されたインターフェースに対してスニファリングを行う
 　スニファリング結果(経過)は標準出力に出力される
 
@@ -50,6 +50,7 @@
 　- source: 送信元のハードウェアアドレス。文字列形式。
 　- destination: 送信先のハードウェアアドレス。文字列形式。
 　- protocol: 使用されたプロトコル
+　- columns: 一行に表示されるバイト数
 
 # (snif:listen channel) => (or t nil)
 　チャネルからブロッキングせずにデータが読み込み可能かどうかを判定する
