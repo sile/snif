@@ -146,7 +146,7 @@
                  WHILE (< i (length octets))
                  DO 
                  (format t " ~(~2,'0x~)" (aref octets i)))
-           (format t "~54t")
+           (format t "~55t")
            (loop FOR column FROM 0 BELOW column-num
                  FOR i = (+ (* row column-num) column)
                  WHILE (< i (length octets))
