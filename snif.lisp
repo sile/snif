@@ -109,7 +109,7 @@
     (let ((ret (recv fd buffer buffer-size (if dont-wait +MSG_DONTWAIT+ 0))))
       (case ret
         (-1 (alien-assert (eq (get-errno) +EAGAIN+) :read-frame)
-            (values nil nil nil nil)))
+            (values nil nil nil nil))
         (0 (values nil nil nil nil))
         (t (let ((frame (make-array ret :element-type '(unsigned-byte 8))))
              (dotimes (i ret)
