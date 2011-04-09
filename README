@@ -1,0 +1,19 @@
+============
+=== 概要 ===
+・パケットキャプチャの実装
+・SBCLおよびLinux環境に依存
+
+
+==================
+=== バージョン ===
+・0.0.1
+
+
+===========
+=== API ===
+
+
+============
+=== 参照 ===
+・http://www.fenix.ne.jp/~thomas/memo/linux_raw_packet/
+・http://linuxjm.sourceforge.jp/html/LDP_man-pages/man7/packet.7.html

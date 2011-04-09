@@ -35,11 +35,6 @@
      (mem-zero-set ,var ,(mksym type ".SIZE"))
      ,@body))
 
-(defmacro a.when (exp &body body)
-  `(let ((it ,exp))
-     (when it
-       ,@body)))
-
 (defmacro named.when ((var exp) &body body)
   `(let ((,var ,exp))
      (when ,var
