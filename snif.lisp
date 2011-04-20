@@ -128,10 +128,19 @@
       len)))
 
 (defun sniffing (interface-name &key (protocol :all) promisc (columns 16) pretty)
+  (declare (ignorable columns pretty))
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
      (multiple-value-bind (octets source destination protocol) 
                           (read-frame cnl)
+       (declare (ignorable source destination protocol))
+       (when octets
+         (let* ((frame (parse-eth-frame octets)))
+         (print 
+          frame
+          *error-output*
+         )))
+       #+IGNORE
        (when octets
          (format t "~&;# ~A -> ~A [~A]~%" source destination protocol)
          (loop WITH column-num = columns
