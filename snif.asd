@@ -13,4 +13,5 @@
                (:file "type")
                (:file "function")
                (:file "eth-protocol")
+               (:file "pretty")
                (:file "snif")))

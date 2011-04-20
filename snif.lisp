@@ -127,7 +127,7 @@
       (alien-assert (/= -1 len) :write-frame)
       len)))
 
-(defun sniffing (interface-name &key (protocol :all) promisc (columns 16))
+(defun sniffing (interface-name &key (protocol :all) promisc (columns 16) pretty)
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
      (multiple-value-bind (octets source destination protocol) 
