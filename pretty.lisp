@@ -101,6 +101,7 @@
          :data (case (ip4-header-protocol header)  ; XXX: 
                  (1 (or (parse-icmp-packet data) data))
                  (6 (or (parse-tcp-packet data) data))
+                 (17 (or (parse-udp-packet data) data))
                  (otherwise data))))))))
 
 ;; ethernet
@@ -133,6 +134,30 @@
                  data)
        :fcs (parse-int octets (- (length octets) 0))))))
 
+;; udp
+(defstruct udp-packet
+  header
+  data)
+
+(defstruct udp-header
+  src-port ; 16
+  dst-port ; 16
+  packet-length ; 16
+  checksum ; 16)
+  )
+
+(defun parse-udp-header (octets)
+  (make-udp-header
+   :src-port (parse-int octets 0 2)
+   :dst-port (parse-int octets 2 4)
+   :packet-length (parse-int octets 4 6)
+   :checksum (parse-int octets 6 8)))
+
+(defun parse-udp-packet (octets)
+  (when (>= (length octets) 8)
+    (make-udp-packet 
+     :header (parse-udp-header octets)
+     :data (subseq octets 8))))
 
 ;; tcp
 (defstruct tcp-packet
