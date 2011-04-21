@@ -127,7 +127,9 @@
        :dst-mac (subseq octets 6 12)
        :type type
        :data (or (case type
-                   (#x0800 (parse-ip-packet data)))
+                   (#x0800 (parse-ip-packet data))
+                   (#x0806 (parse-arp-packet data))
+                   )
                  data)
        :fcs (parse-int octets (- (length octets) 0))))))
 
@@ -200,3 +202,31 @@
                         (subseq octets length))
                    (subseq octets length))))))
   
+
+;; arp
+(defstruct arp-packet
+  hardware-type   ; 16
+  protocol-type   ; 16
+  hardware-length ; 8
+  protocol-length ; 8
+  operation ; 16
+  src-hardware-addr ; hardware-lenth
+  src-protocol-addr ; protocol-length
+  dst-hardware-addr ; hardware-length
+  dst-protocol-addr ; protocol-length
+  )
+  
+(defun parse-arp-packet (octets)
+  (let ((hw-len (aref octets 4))
+        (pt-len (aref octets 5))
+        (base 8))
+    (make-arp-packet
+     :hardware-type (parse-int octets 0 2)
+     :protocol-type (parse-int octets 2 4)
+     :hardware-length hw-len
+     :protocol-length pt-len
+     :operation (parse-int octets 6 8)
+     :src-hardware-addr (subseq octets base (incf base hw-len))
+     :src-protocol-addr (subseq octets base (incf base pt-len))
+     :dst-hardware-addr (subseq octets base (incf base hw-len))
+     :dst-protocol-addr (subseq octets base (incf base pt-len)))))
