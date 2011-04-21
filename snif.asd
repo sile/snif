@@ -14,4 +14,5 @@
                (:file "function")
                (:file "eth-protocol")
                (:file "pretty")
+               (:file "filter")
                (:file "snif")))

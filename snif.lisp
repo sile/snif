@@ -127,7 +127,7 @@
       (alien-assert (/= -1 len) :write-frame)
       len)))
 
-(defun sniffing (interface-name &key (protocol :all) promisc (columns 16) pretty)
+(defun sniffing (interface-name &key (protocol :all) promisc (columns 16) pretty filter)
   (declare (ignorable columns))
   (with-channel (cnl interface-name :protocol protocol :promisc promisc)
     (loop 
@@ -137,10 +137,12 @@
        (if pretty
        (when octets
          (let* ((frame (parse-eth-frame octets)))
-         (print 
-          frame
-          *error-output*
-         )))
+           (when (or (null filter)
+                     (acceptable-p filter frame octets))
+             (print 
+              frame
+              *error-output*
+              ))))
        (when octets
          (format t "~&;# ~A -> ~A [~A]~%" source destination protocol)
          (loop WITH column-num = columns
