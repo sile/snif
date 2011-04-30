@@ -103,14 +103,17 @@
          (set-promisc-mode ,interface-name nil))
        (close ,var))))
 
+(defun format-mac-addr (octets start)
+  (flet ((ref (i) (aref octets (+ start i))))
+    (format nil "~(~@{~2,'0x~^:~}~)"
+            (ref 0) (ref 1) (ref 2) (ref 3) (ref 4) (ref 5))))
+  
 (defun parse-ethernet-header (frame)
   (if (< (length frame) 14)
       (values nil nil nil)
     (flet ((ref (i) (aref frame i)))
-      (values (format nil "~(~@{~2,'0x~^:~}~)"
-                      (ref 0) (ref 1) (ref 2) (ref 3) (ref 4) (ref 5))
-              (format nil "~(~@{~2,'0x~^:~}~)"
-                      (ref 6) (ref 7) (ref 8) (ref 9) (ref 10) (ref 11))
+      (values (format-mac-addr frame 0)
+              (format-mac-addr frame 6)
               (find-protocol-by-value (+ (ash (ref 12) 8) (ref 13)))))))
 
 (defun read-frame (channel &key dont-wait)
@@ -165,3 +168,29 @@
                                   #\.)))
            (terpri))
          (format t ";~%"))))))
+
+(defvar *broadcast-mac* (coerce #(#xFF #xFF #xFF #xFF #xFF #xFF) '(vector (unsigned-byte 8))))
+(defun arp-request (interface-name source-ip target-ip)
+  (declare #.*muffle-compiler-note*)
+  (with-channel (cnl interface-name :protocol :arp)
+    (let* ((hwaddr (interface-hwaddr (channel-fd cnl) interface-name))
+           (octets
+            (concatenate '(vector (unsigned-byte 8))
+                         *broadcast-mac* ; destination mac
+                         hwaddr          ; source mac
+                         '(#x08 #x06)    ; type (arp)
+                         '(#x00 #x01)    ; hw type (ethernet)
+                         '(#x08 #x00)    ; protocol type (tcp/ip)
+                         '(#x06)         ; hw length
+                         '(#x04)         ; protocol length
+                         '(#x00 #x01)    ; operation (request)
+                         hwaddr          ; source hw address
+                         source-ip       ; source ip addresss
+                         *broadcast-mac* ; destination hw address
+                         target-ip       ; destination ip address
+                         )))
+      (write-frame octets cnl)
+      (let ((response (read-frame cnl)))
+        (and (equalp (subseq response 28 32)
+                     target-ip)
+             (format-mac-addr response 22))))))

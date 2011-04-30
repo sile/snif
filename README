@@ -6,7 +6,7 @@
 
 ==================
 === バージョン ===
-・0.0.1
+・0.0.1 
 
 
 ===========
@@ -65,6 +65,11 @@
 　- channel: 対象チャネル
 　- write-octets-size: 実際に出力されたバイト数
 
+# (defun arp-request (interface-name source-ip target-ip) => (or nil mac-addr-string)
+　ARPリクエストを発行してtarget-ipのMACアドレスを取得する
+　- interface-name: ARPリクエスト発行元MACアドレス
+　- source-ip: ARPリクエスト発行元IPアドレス
+　- target-ip: MACアドレスを取得するIPアドレス
 
 ==============
 === 使用例 ===

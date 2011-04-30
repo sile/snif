@@ -12,7 +12,8 @@
            promisc-mode
            set-promisc-mode
            list-all-protocols
-           sniffing))
+           sniffing
+           arp-request))
 (in-package :snif)
 
 (defvar *muffle-compiler-note* '(sb-ext:muffle-conditions sb-ext:compiler-note))
