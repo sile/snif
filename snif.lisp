@@ -16,6 +16,15 @@
     (alien-assert (sb-unix:unix-ioctl fd +SIOCGIFINDEX+ (alien-sap ifr)) :get-interface-index name)
     (ifreq.index ifr)))
 
+(defun interface-hwaddr (fd interface-name &aux (name interface-name))
+  (declare #.*muffle-compiler-note*)
+  (with-ifreq (ifr name)
+    (alien-assert (sb-unix:unix-ioctl fd +SIOCGIFHWADDR+ (alien-sap ifr)) :get-interface-index name)
+    (let ((data (sockaddr.data (ifreq.hwaddr ifr)))
+          (addr (make-array 6 :element-type '(unsigned-byte 8))))
+      (dotimes (i 6 addr)
+        (setf (aref addr i) (deref data i))))))
+
 (defun promisc-mode (interface-name &aux (name interface-name))
   (declare #.*muffle-compiler-note*)
   (let ((fd (%make-packet-fd ETH_P_ALL)))

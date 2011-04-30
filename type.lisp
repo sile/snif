@@ -7,8 +7,10 @@
 (define-alien-type sockaddr
   (struct nil
     (family unsigned-short)
-    (data   (array char 14))))
+    (data   (array unsigned-char 14))))
 (define-symbol-macro sockaddr.size (alien-size sockaddr :bytes))
+(defmacro sockaddr.family (o) `(slot ,o 'family))
+(defmacro sockaddr.data (o) `(slot ,o 'data))
 
 (define-alien-type ifreq
   (struct nil
@@ -16,11 +18,13 @@
     (u (union nil
          (index int)
          (flags short)
+         (hwaddr sockaddr)
          (__ (array char #.+IFNAMSIZ+))))))
 (define-symbol-macro ifreq.size (alien-size ifreq :bytes))
 (defmacro ifreq.name (o) `(slot ,o 'name))
 (defmacro ifreq.index (o) `(slot (slot ,o 'u) 'index))
 (defmacro ifreq.flags (o) `(slot (slot ,o 'u) 'flags))
+(defmacro ifreq.hwaddr (o) `(slot (slot ,o 'u) 'hwaddr))
 
 (define-alien-type sockaddr-ll
   (struct nil

@@ -12,3 +12,4 @@
 (defconstant +SIOCGIFFLAGS+ #x8913)
 (defconstant +SIOCSIFFLAGS+ #x8914)
 (defconstant +SIOCGIFINDEX+ #x8933)
+(defconstant +SIOCGIFHWADDR+ #x8927)
