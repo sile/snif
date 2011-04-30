@@ -106,8 +106,8 @@
 
 ;; ethernet
 (defstruct eth-frame
-  src-mac
   dst-mac
+  src-mac
   type
   data
   fcs)  ; frame check sequence
